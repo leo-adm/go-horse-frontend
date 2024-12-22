@@ -9,7 +9,7 @@ import Link from "next/link";
 import useMessage from "@/hooks/useMessage";
 import RaceResults from "./raceResults";
 
-const socket = io("http://localhost:3333");
+const socket = io(process.env.NEXT_PUBLIC_API_BASE_URL);
 
 export default function HomePage() {
   const userId = "1";
@@ -44,6 +44,7 @@ export default function HomePage() {
 
     socket.on("raceResult", (data: { winnerHorse: RacingHorse }) => {
       setWinnerHorse(data.winnerHorse);
+      fetchBalance();
     });
 
     return () => {
@@ -54,7 +55,7 @@ export default function HomePage() {
   }, []);
 
   const fetchBalance = async () => {
-    const res = await fetch("http://localhost:3333/balance", {
+    const res = await fetch(process.env.NEXT_PUBLIC_API_BASE_URL + "/balance", {
       headers: {
         "x-user-id": userId,
       },
@@ -74,7 +75,7 @@ export default function HomePage() {
   };
 
   const fetchStatus = async () => {
-    const res = await fetch("http://localhost:3333/status", {
+    const res = await fetch(process.env.NEXT_PUBLIC_API_BASE_URL + "/status", {
       headers: {
         "x-user-id": userId,
       },

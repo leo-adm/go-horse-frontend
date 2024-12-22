@@ -18,7 +18,7 @@ export default function BettingPanel({
   const [betAmount, setBetAmount] = useState<number>(100);
 
   const placeBet = async () => {
-    const res = await fetch("http://localhost:3333/bet", {
+    const res = await fetch(process.env.NEXT_PUBLIC_API_BASE_URL + "/bet", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

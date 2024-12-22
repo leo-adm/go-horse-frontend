@@ -9,23 +9,29 @@ export default function AdminPage() {
   const { message, showMessage } = useMessage();
 
   const startSystem = async () => {
-    const res = await fetch("http://localhost:3333/admin/start", {
-      method: "POST",
-      headers: {
-        "x-admin-token": adminToken,
-      },
-    });
+    const res = await fetch(
+      process.env.NEXT_PUBLIC_API_BASE_URL + "/admin/start",
+      {
+        method: "POST",
+        headers: {
+          "x-admin-token": adminToken,
+        },
+      }
+    );
     const json = await res.json();
     showMessage(json.message || json.error || "Error");
   };
 
   const pauseSystem = async () => {
-    const res = await fetch("http://localhost:3333/admin/pause", {
-      method: "POST",
-      headers: {
-        "x-admin-token": adminToken,
-      },
-    });
+    const res = await fetch(
+      process.env.NEXT_PUBLIC_API_BASE_URL + "/admin/pause",
+      {
+        method: "POST",
+        headers: {
+          "x-admin-token": adminToken,
+        },
+      }
+    );
     const json = await res.json();
     showMessage(json.message || json.error || "Error");
   };
