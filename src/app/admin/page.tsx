@@ -1,12 +1,12 @@
 "use client";
 
 import useMessage from "@/hooks/useMessage";
-import Link from "next/link";
-import React, { useState } from "react";
+import { useAuth } from "@clerk/nextjs";
+import React from "react";
 
 export default function AdminPage() {
-  const [adminToken, setAdminToken] = useState("");
   const { message, showMessage } = useMessage();
+  const { getToken } = useAuth();
 
   const startSystem = async () => {
     const res = await fetch(
@@ -14,7 +14,7 @@ export default function AdminPage() {
       {
         method: "POST",
         headers: {
-          "x-admin-token": adminToken,
+          Authorization: "Bearer " + (await getToken()),
         },
       }
     );
@@ -28,7 +28,7 @@ export default function AdminPage() {
       {
         method: "POST",
         headers: {
-          "x-admin-token": adminToken,
+          Authorization: "Bearer " + (await getToken()),
         },
       }
     );
@@ -37,22 +37,8 @@ export default function AdminPage() {
   };
 
   return (
-    <div className="p-6 font-sans">
-      <Link href="/" className="text-blue-600 underline block mb-4 text-lg">
-        Go home
-      </Link>
-
-      <h1 className="text-2xl font-bold mb-4">Admin panel</h1>
-
-      <div className="mb-4">
-        <label className="mr-2 font-medium">Admin token:</label>
-        <input
-          type="password"
-          value={adminToken}
-          onChange={(e) => setAdminToken(e.target.value)}
-          className="border p-1 w-48"
-        />
-      </div>
+    <div className="p-2 md:p-6">
+      <h1 className="text-lg font-bold mb-4">Admin panel</h1>
 
       <div className="mb-4">
         <button

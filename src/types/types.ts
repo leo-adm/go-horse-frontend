@@ -27,7 +27,6 @@ export type HorsePosition = {
 };
 
 export type Status = {
-  user: User;
   state: State;
   currentRaceHorses?: RacingHorse[];
   currentRacePositions?: HorsePosition[];

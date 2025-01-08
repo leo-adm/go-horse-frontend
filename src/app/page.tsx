@@ -1,19 +1,16 @@
 "use client";
 
-import { HorsePosition, RacingHorse, State, Status, User } from "@/types/types";
+import { HorsePosition, RacingHorse, State, Status } from "@/types/types";
 import React, { useEffect, useState } from "react";
-import { io } from "socket.io-client";
 import Race from "./race";
 import BettingPanel from "./bettingPanel";
-import Link from "next/link";
 import useMessage from "@/hooks/useMessage";
 import RaceResults from "./raceResults";
-
-const socket = io(process.env.NEXT_PUBLIC_API_BASE_URL);
+import { useAuth } from "@clerk/nextjs";
+import socket from "@/socket";
 
 export default function HomePage() {
-  const userId = "1";
-  const [user, setUser] = useState<User | null>(null);
+  const [balance, setBalance] = useState<number>(0);
   const [state, setState] = useState<State>(State.PAUSED);
   const [currentRaceHorses, setCurrentRaceHorses] = useState<RacingHorse[]>([]);
   const [currentRacePositions, setCurrentRacePositions] = useState<
@@ -21,9 +18,11 @@ export default function HomePage() {
   >([]);
   const [winnerHorse, setWinnerHorse] = useState<RacingHorse | null>(null);
   const { message, showMessage } = useMessage();
+  const { isLoaded, userId, getToken } = useAuth();
 
   useEffect(() => {
     fetchStatus();
+    fetchBalance();
 
     socket.on("stateChange", (data) => {
       setState(data.state);
@@ -38,7 +37,6 @@ export default function HomePage() {
     });
 
     socket.on("positionsUpdate", (data) => {
-      console.log(data.currentRacePositions);
       setCurrentRacePositions(data.currentRacePositions);
     });
 
@@ -57,32 +55,22 @@ export default function HomePage() {
   const fetchBalance = async () => {
     const res = await fetch(process.env.NEXT_PUBLIC_API_BASE_URL + "/balance", {
       headers: {
-        "x-user-id": userId,
+        Authorization: "Bearer " + (await getToken()),
       },
     });
 
     const data = await res.json();
     if (data.balance != null) {
-      setUser((curr) => {
-        return {
-          ...curr!,
-          balance: data.balance,
-        };
-      });
+      setBalance(data.balance);
     } else {
       showMessage(data.error || "Error");
     }
   };
 
   const fetchStatus = async () => {
-    const res = await fetch(process.env.NEXT_PUBLIC_API_BASE_URL + "/status", {
-      headers: {
-        "x-user-id": userId,
-      },
-    });
+    const res = await fetch(process.env.NEXT_PUBLIC_API_BASE_URL + "/status");
     const data: Status = await res.json();
     setState(data.state);
-    setUser(data.user);
 
     if (data.currentRaceHorses) {
       setCurrentRaceHorses(data.currentRaceHorses);
@@ -98,24 +86,35 @@ export default function HomePage() {
     showMessage("Betting completed successfully!");
   };
 
+  const getStateText = (state: State): string => {
+    switch (state) {
+      case State.PAUSED:
+        return "Paused";
+      case State.OPEN_TO_BETS:
+        return "Open to bets";
+      case State.RACE_STARTING:
+        return "Race starting";
+      case State.RACING:
+        return "Racing";
+      case State.RACE_FINISHED:
+        return "Race finished";
+    }
+  };
+
   const onBetError = (err?: string) => {
     showMessage(err || "Error");
   };
 
+  if (!isLoaded || !userId) {
+    return null;
+  }
+
   return (
-    <div className="p-6 font-sans">
-      <Link
-        href="/admin"
-        className="text-blue-600 underline block mb-4 text-lg"
-      >
-        Go to Admin Panel
-      </Link>
-
-      <h1 className="text-2xl font-bold mb-4">Go Horse</h1>
-
-      {!!user && <p className="mb-4">Your balance: {user.balance}</p>}
-
-      <p className="mb-4">Current state: {state.toString()}</p>
+    <div className="p-2 md:p-6 font-sans">
+      <div className="flex justify-between items-center">
+        <p className="">{getStateText(state)}</p>
+        <p className="text-green-900 border px-2 py-1">${balance}</p>
+      </div>
 
       {(state === State.RACE_STARTING || state === State.RACING) && (
         <Race
@@ -126,7 +125,6 @@ export default function HomePage() {
 
       {state === State.OPEN_TO_BETS && (
         <BettingPanel
-          userId={userId}
           horsesToBet={currentRaceHorses}
           onSuccess={onBetSuccess}
           onError={onBetError}

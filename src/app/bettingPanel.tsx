@@ -1,32 +1,67 @@
-import { Horse } from "@/types/types";
+import { RacingHorse } from "@/types/types";
+import { useAuth } from "@clerk/nextjs";
 import { useState } from "react";
 
+interface BettingCardProps {
+  horse: RacingHorse;
+  placeBet: (horseId: string, amount: number) => void;
+}
+
+function BettingCard({ horse, placeBet }: BettingCardProps) {
+  const [betAmount, setBetAmount] = useState(100);
+
+  const onBetClick = () => {
+    placeBet(horse.id, betAmount);
+  };
+
+  return (
+    <div className="flex flex-col items-center justify-center p-4 bg-white rounded-lg shadow-lg">
+      <h2 className="text-xl font-semibold mb-2">{horse.name}</h2>
+      <p className="text-sm text-gray-600">Odds: {horse.odd}x</p>
+
+      <div className="mb-2">
+        <label className="mr-2">Bet amount:</label>
+        <input
+          type="number"
+          value={betAmount}
+          onChange={(e) => setBetAmount(Number(e.target.value))}
+          className="border p-1 w-20"
+        />
+      </div>
+
+      <button
+        className="bg-green-600 text-white py-1 px-3 rounded"
+        onClick={onBetClick}
+      >
+        Bet
+      </button>
+    </div>
+  );
+}
+
 interface BettingPanelProps {
-  userId: string;
-  horsesToBet: Horse[];
+  horsesToBet: RacingHorse[];
   onSuccess: () => void;
   onError: (err?: string) => void;
 }
 
 export default function BettingPanel({
-  userId,
   horsesToBet,
   onSuccess,
   onError,
 }: BettingPanelProps) {
-  const [selectedHorseId, setSelectedHorseId] = useState(horsesToBet[0].id);
-  const [betAmount, setBetAmount] = useState<number>(100);
+  const { getToken } = useAuth();
 
-  const placeBet = async () => {
+  const placeBet = async (horseId: string, amount: number) => {
     const res = await fetch(process.env.NEXT_PUBLIC_API_BASE_URL + "/bet", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "x-user-id": userId,
+        Authorization: "Bearer " + (await getToken()),
       },
       body: JSON.stringify({
-        horseId: selectedHorseId,
-        amount: betAmount,
+        horseId,
+        amount,
       }),
     });
 
@@ -42,40 +77,12 @@ export default function BettingPanel({
   return (
     <>
       <h2 className="text-xl font-semibold mb-2">Betting Panel</h2>
-      <div className="mb-2">
-        <label className="mr-2">Horse:</label>
-        <select
-          value={selectedHorseId}
-          onChange={(e) => {
-            console.log(e.target.value);
-            setSelectedHorseId(e.target.value);
-          }}
-          className="border p-1"
-        >
-          {horsesToBet.map((horse) => (
-            <option key={horse.id} value={horse.id}>
-              {horse.name}
-            </option>
-          ))}
-        </select>
-      </div>
 
-      <div className="mb-2">
-        <label className="mr-2">Bet amount:</label>
-        <input
-          type="number"
-          value={betAmount}
-          onChange={(e) => setBetAmount(Number(e.target.value))}
-          className="border p-1 w-20"
-        />
+      <div className="flex flex-wrap gap-4">
+        {horsesToBet.map((horse) => (
+          <BettingCard key={horse.id} horse={horse} placeBet={placeBet} />
+        ))}
       </div>
-
-      <button
-        className="bg-green-600 text-white py-1 px-3 rounded"
-        onClick={placeBet}
-      >
-        Bet
-      </button>
     </>
   );
 }
